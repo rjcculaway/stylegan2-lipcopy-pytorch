@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 
 
-# sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'hrnet_lms'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'hrnet_lms'))
 import hrnet_lms.hrnet_lib.models as models
 from hrnet_lms.hrnet_lib.config import config, update_config
 
@@ -45,8 +45,8 @@ class HRNet_lms(nn.Module):
         self.model = self.model.module
         self.model.eval()
         
-        self.register_buffer('mean', torch.FloatTensor([0.485, 0.456, 0.406]).view(1,3,1,1))
-        self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1,3,1,1))
+        self.register_buffer('mean', torch.FloatTensor([0.485, 0.456, 0.406]).view(1,3,1,1).to("cuda:0"))
+        self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1,3,1,1).to("cuda:0"))
         
     def forward(self, x):
         # input x
@@ -55,7 +55,7 @@ class HRNet_lms(nn.Module):
         # RGB 
         # output lms coords
         # size: [bs, lms, xy]
-        
+
         # normalize 
         b, c, h, w= x.size()
         x = ((x+1)/2 - self.mean)/self.std
@@ -115,7 +115,8 @@ if __name__ == '__main__':
     from PIL import Image
     model = HRNet_lms()
     
-    img = np.array(Image.open('/home/code-base/user_space/__Data_old/FFHQ/images1024x1024/00000.png').convert('RGB'), dtype=np.float32) /255.
+    # img = np.array(Image.open('/home/code-base/user_space/__Data_old/FFHQ/images1024x1024/00000.png').convert('RGB'), dtype=np.float32) /255.
+    img = np.array(Image.open('../sample/000000.png').convert('RGB'), dtype=np.float32) /255.
     img = img * 2 - 1
     print(img.min(), img.max())
     
