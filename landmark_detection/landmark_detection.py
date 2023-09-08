@@ -45,8 +45,8 @@ class HRNet_lms(nn.Module):
         self.model = self.model.module
         self.model.eval()
         
-        self.register_buffer('mean', torch.FloatTensor([0.485, 0.456, 0.406]).view(1,3,1,1).to("cuda:0"))
-        self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1,3,1,1).to("cuda:0"))
+        self.register_buffer('mean', torch.tensor([0.485, 0.456, 0.406], device="cuda:0").view(1,3,1,1))
+        self.register_buffer('std', torch.tensor([0.229, 0.224, 0.225], device="cuda:0").view(1,3,1,1))
         
     def forward(self, x):
         # input x
