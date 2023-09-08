@@ -10,37 +10,58 @@ import torch.nn as nn
 from landmark_detection import HRNet_lms
 from PIL import Image
 
-if __name__ == '__main__':
-  model = HRNet_lms()
+class LipDetector():
 
-  paths = glob.glob("../sample/*.png")
+  LEFT_LIP_CORNER: int = 48
+  RIGHT_LIP_CORNER: int = 54
 
-  for i, path in enumerate(paths):
+  def __init__(self) -> None:
+    self.model = HRNet_lms()
+    return
 
-    img = np.array(Image.open(path).convert('RGB'), dtype=np.float32) / 255.
-    img = img * 2 - 1 # Map values to 0.0 to 1.0
+  def load_image(self, image_path) -> np.ndarray:
+    img = np.array(Image.open(image_path).convert('RGB'), dtype=np.float32)
+    img = img / 255. * 2 - 1 # Map values to 0.0 to 1.0
     
-    x = torch.from_numpy(img).to("cuda:0").permute(2, 0, 1) # RGB -> BRG
-    x = x.unsqueeze(0)  # Add an additional dimension
+    return img
+
+  def preprocess_image(self, img) -> torch.Tensor:
+    preprocessed_img = torch.from_numpy(img).to("cuda:0").permute(2, 0, 1) # RGB -> BRG
+    preprocessed_img = preprocessed_img.unsqueeze(0)  # Add an additional dimension
     pool = nn.AvgPool2d(4, 4)
-    x = pool(x) # Downsample to 25% by average pooling
+    preprocessed_img = pool(preprocessed_img) # Downsample to 25% by average pooling
 
+    return preprocessed_img 
+  
+  def process_image(self, path):
+    return self.preprocess_image(self.load_image(path))
+
+  def detect_lips(self, preprocessed_img):
     with torch.no_grad():
-      heatmaps = model(x).cpu().numpy()
+      heatmaps = self.model(preprocessed_img).cpu().numpy()
       print(heatmaps.shape)
+    
+    marks, heatmap_grid = self.model.parse_heatmaps(heatmaps[0], (256, 256))
 
-    mark_group = []
+    return marks[[self.LEFT_LIP_CORNER, self.RIGHT_LIP_CORNER]], heatmap_grid
 
-    for heatmap in heatmaps:
-      print(heatmap.shape)
-      marks, heatmap_grid = model.parse_heatmaps(heatmap, (256, 256))
-      mark_group.append(marks)
-
+  def save_image_with_marks(self, img, mark_group, heatmap_grid, name_index = ""):
     np_img = (img + 1) / 2 * 255 # -> Map image back to 0-255
     np_img = cv2.resize(np_img, (256, 256), interpolation = cv2.INTER_AREA)
 
-    model.draw_marks(np_img, mark_group)
-    cv2.imwrite('results' + str(i + 1) + '.png', np_img[:,:,::-1])
-    cv2.imwrite('heatmap' + str(i + 1) + '.png', heatmap_grid*255)
+    self.model.draw_marks(np_img, mark_group)
+    cv2.imwrite('results' + name_index + '.png', np_img[:,:,::-1])
+    cv2.imwrite('heatmap' + name_index + '.png', heatmap_grid*255)
+if __name__ == '__main__':
+
+  lip_detector = LipDetector()
+  img_paths = glob.glob("../sample/*.png")
+
+  for i, path in enumerate(img_paths):
+    img = lip_detector.process_image(path)
+    lip_coordinate = lip_detector.detect_lips(img)
+    print(lip_coordinate[0])
+
+
   
 
