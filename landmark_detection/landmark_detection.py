@@ -17,7 +17,7 @@ from hrnet_lms.hrnet_lib.config import config, update_config
 
 
 class options():
-    cfg = './hrnet_lms/experiments/300w/face_alignment_300w_hrnet_w18.yaml'
+    cfg = './landmark_detection/hrnet_lms/experiments/300w/face_alignment_300w_hrnet_w18.yaml'
     
     face = [1024//8, 1024//8, 1024-1024//8, 1024-1024//8]
 
@@ -28,7 +28,7 @@ class HRNet_lms(nn.Module):
         super(HRNet_lms, self).__init__()
         args = options()
         args = update_config(config, args)
-        self.model_file = './pretrained_models/hrnet-300w.pth'
+        self.model_file = './landmark_detection/pretrained_models/hrnet-300w.pth'
         config.defrost()
         config.MODEL.INIT_WEIGHTS = False
         config.freeze()
