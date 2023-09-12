@@ -6,26 +6,31 @@ from model import Generator
 from tqdm import tqdm
 
 from detect_lips import LipDetector
+from lip_optimizer import LipOptimizer
+
 
 def generate(args, g_ema, device, mean_latent):
-  with torch.no_grad():
-      g_ema.eval()
-      sample_z = torch.randn(args.sample, args.latent, device=device)
+    with torch.no_grad():
+        g_ema.eval()
+        sample_z = torch.randn(args.sample, args.latent, device=device)
 
-      sample, _ = g_ema(
-          [sample_z], truncation=args.truncation, truncation_latent=mean_latent
-      )
+        sample, _ = g_ema(
+            [sample_z], truncation=args.truncation, truncation_latent=mean_latent
+        )
 
-      return sample
-    
+        return sample
+
+
 def generate_from_sample(args, g_ema: Generator, device, mean_latent, sample_z):
-  with torch.no_grad():
-    g_ema.eval()
-    sample, _ = g_ema(
-       [sample_z.to(device)], truncation=args.truncation, truncation_latent=mean_latent
-    )
+    with torch.no_grad():
+        g_ema.eval()
+        sample, _ = g_ema(
+            [sample_z.to(device)],
+            truncation=args.truncation,
+            truncation_latent=mean_latent,
+        )
 
-    return sample
+        return sample
 
 
 if __name__ == "__main__":
@@ -85,14 +90,36 @@ if __name__ == "__main__":
 
     # Load lip detection module
     lip_detector = LipDetector()
+    """
+    # Generate two images
+    sample1 = generate(args, g_ema, device, mean_latent)
+    sample2 = generate(args, g_ema, device, mean_latent)
 
-    for i in tqdm(range(args.pics)):
-      sample = generate(args, g_ema, device, mean_latent)
-      grid = utils.make_grid(sample, nrow=1, normalize=True, value_range=(-1, 1)) * 2. - 1.
-      # print(grid.size())
-      # print(f"min: {grid.min()} max:  {grid.max()}")
-      
-      marks, heatmap = lip_detector.detect_lips(lip_detector.preprocess_image_from_tensor(grid))
-      img = grid.permute(1, 2, 0).cpu().numpy()
-      lip_detector.save_image_with_marks(img, marks, heatmap, f"{str(i).zfill(6)}")
+    for i, sample in tqdm(enumerate([sample1, sample2])):
+        # Save the original image for comparison
+        utils.save_image(
+            sample,
+            f"sample/original{str(i).zfill(6)}.png",
+            nrow=1,
+            normalize=True,
+            range=(-1, 1),
+        )
+        grid = (
+            utils.make_grid(sample, nrow=1, normalize=True, value_range=(-1, 1)) * 2.0
+            - 1.0
+        )
+        # print(grid.size())
+        # print(f"min: {grid.min()} max:  {grid.max()}")
 
+        marks, heatmap = lip_detector.detect_lips(
+            lip_detector.preprocess_image_from_tensor(grid)
+        )
+        img = grid.permute(1, 2, 0).cpu().numpy()
+        lip_detector.save_image_with_marks(img, marks, heatmap, f"{str(i).zfill(6)}")
+    """
+    # Load lip optimizer
+    lip_optimizer = LipOptimizer(g_ema, lip_detector, args)
+    lip_optimizer.optimize(
+        torch.randn(args.sample, args.latent, device=device),
+        torch.randn(args.sample, args.latent, device=device),
+    )
