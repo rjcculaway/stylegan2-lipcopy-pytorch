@@ -47,11 +47,8 @@ class LipDetector:
         return preprocessed_img
 
     def preprocess_image_from_tensor(self, img) -> torch.Tensor:
-        preprocessed_img = img.unsqueeze(0)  # Add an additional dimension
         pool = nn.AvgPool2d(4, 4)
-        preprocessed_img = pool(
-            preprocessed_img
-        )  # Downsample to 25% by average pooling
+        preprocessed_img = pool(img)  # Downsample to 25% by average pooling
 
         return preprocessed_img
 
@@ -59,19 +56,12 @@ class LipDetector:
         return self.preprocess_image(self.load_image(path))
 
     def detect_lips(self, preprocessed_img):
-        with torch.no_grad():
-            heatmaps = self.model(preprocessed_img).cpu().numpy()
+        heatmaps = self.model(preprocessed_img)
+        # marks, heatmap_grid = self.model.parse_heatmaps(heatmaps[0], (256, 256))
 
-        marks, heatmap_grid = self.model.parse_heatmaps(heatmaps[0], (256, 256))
-
-        return (
-            np.array(
-                marks[
-                    [self.LEFT_LIP_CORNER, 51, 57, 62, 66, self.RIGHT_LIP_CORNER]
-                ].copy()
-            ),
-            heatmap_grid,
-        )
+        return heatmaps[
+            :, [self.LEFT_LIP_CORNER, 51, 57, 62, 66, self.RIGHT_LIP_CORNER]
+        ]
 
     def save_image_with_marks(self, img, mark_group, heatmap_grid, name_index=""):
         np_img = (img + 1) / 2 * 255  # -> Map image back to 0-255

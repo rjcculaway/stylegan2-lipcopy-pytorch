@@ -21,16 +21,27 @@ def generate(args, g_ema, device, mean_latent):
         return sample
 
 
-def generate_from_sample(args, g_ema: Generator, device, mean_latent, sample_z):
-    with torch.no_grad():
-        g_ema.eval()
-        sample, _ = g_ema(
-            [sample_z.to(device)],
-            truncation=args.truncation,
-            truncation_latent=mean_latent,
-        )
+def generate_from_sample_z(args, g_ema: Generator, device, mean_latent, sample_z):
+    g_ema.eval()
+    sample, _ = g_ema(
+        [sample_z.to(device)],
+        truncation=args.truncation,
+        truncation_latent=mean_latent,
+    )
 
-        return sample
+    return sample
+
+
+def generate_from_sample_w(args, g_ema: Generator, device, mean_latent, sample_w):
+    g_ema.eval()
+    sample, _ = g_ema(
+        [sample_w.to(device)],
+        truncation=args.truncation,
+        truncation_latent=mean_latent,
+        input_is_latent=True,
+    )
+
+    return sample
 
 
 if __name__ == "__main__":
