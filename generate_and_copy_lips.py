@@ -101,36 +101,13 @@ if __name__ == "__main__":
 
     # Load lip detection module
     lip_detector = LipDetector()
-    """
-    # Generate two images
-    sample1 = generate(args, g_ema, device, mean_latent)
-    sample2 = generate(args, g_ema, device, mean_latent)
 
-    for i, sample in tqdm(enumerate([sample1, sample2])):
-        # Save the original image for comparison
-        utils.save_image(
-            sample,
-            f"sample/original{str(i).zfill(6)}.png",
-            nrow=1,
-            normalize=True,
-            range=(-1, 1),
-        )
-        grid = (
-            utils.make_grid(sample, nrow=1, normalize=True, value_range=(-1, 1)) * 2.0
-            - 1.0
-        )
-        # print(grid.size())
-        # print(f"min: {grid.min()} max:  {grid.max()}")
-
-        marks, heatmap = lip_detector.detect_lips(
-            lip_detector.preprocess_image_from_tensor(grid)
-        )
-        img = grid.permute(1, 2, 0).cpu().numpy()
-        lip_detector.save_image_with_marks(img, marks, heatmap, f"{str(i).zfill(6)}")
-    """
     # Load lip optimizer
     lip_optimizer = LipOptimizer(g_ema, lip_detector, args)
-    lip_optimizer.optimize(
-        torch.randn(args.sample, args.latent, device=device),
-        torch.randn(args.sample, args.latent, device=device),
-    )
+
+    # lip_optimizer.optimize_retarget(
+    #     torch.randn(args.sample, args.latent, device=device),
+    #     torch.randn(args.sample, args.latent, device=device),
+    # )
+
+    lip_optimizer.optimize_smile(torch.randn(args.sample, args.latent, device=device))

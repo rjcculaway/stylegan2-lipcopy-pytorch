@@ -17,6 +17,11 @@ class LipOptimizer:
         self.generator = generator
         self.lip_detector = lip_detector
 
+        # Editing direction for the mouth
+        self.mouth_editing_direction = torch.load("editing_directions/smile.pt").to(
+            self.DEVICE
+        )
+
         self.generator_args = generator_args
 
         self.num_iterations = 300
@@ -24,10 +29,6 @@ class LipOptimizer:
         self.mse_loss = nn.MSELoss(reduction="mean")
         self.l1_loss = nn.L1Loss()
 
-        # Formula to get the new input latent code
-        # input_ws = original_ws + (
-        #         optim_target + direction_ws
-        #     ) * tensor_edit_scale.view(bs, 1, 1)
         return
 
     def generate_from_sample_z(self, sample_z):
@@ -53,14 +54,80 @@ class LipOptimizer:
         )
         return sample
 
-    # def transform_sample(self, sample: Tensor):
-    #     """Maps a tensor image to -1.0 to 1.0."""
-    #     return (
-    #         utils.make_grid(sample, nrow=1, normalize=True, value_range=(-1, 1)) * 2.0
-    #         - 1.0
-    #     ).requires_grad_(True)
+    def optimize_smile(self, source_latent: Tensor):
+        """Given an input tensor in Z, changes the face such that is smiles while retaining lip expression dynamics."""
+        # Convert source latent in Z to W
+        source_w = self.generator.style(source_latent).detach()
 
-    def optimize(self, source_latent: Tensor, target_latent: Tensor) -> Tensor:
+        delta_latent = torch.zeros_like(source_w).to(self.DEVICE)
+        delta_latent.requires_grad = True
+
+        # Instantiate optimizer (ADAM) as well as loss functions, delta_latent and direction_magnitude
+        optimizer = optim.Adam([delta_latent])
+        mse_loss = nn.MSELoss(reduction="sum")
+
+        # Generate tensor of unoptimized original image
+        original_image = self.generate_from_sample_w(source_w).detach()
+        original_heatmap = self.lip_detector.detect_lips(
+            self.lip_detector.preprocess_image_from_tensor(original_image)
+        ).detach()
+
+        utils.save_image(
+            original_image,
+            f"sample/original_image.png",
+            nrow=1,
+            normalize=True,
+            range=(-1, 1),
+        )
+
+        # Generate tensor for unoptimized smiling image
+        utils.save_image(
+            self.generate_from_sample_w(
+                source_w + self.mouth_editing_direction
+            ).detach(),
+            f"sample/smiling_image.png",
+            nrow=1,
+            normalize=True,
+            range=(-1, 1),
+        )
+
+        # Create dictionary for lambdas
+        loss_parameters = {}
+        loss_parameters["lambda_landmark_loss"] = 4000.0
+        loss_parameters["lambda_smile_loss"] = 500.0
+
+        for i in tqdm(range(self.num_iterations)):
+            optimizer.zero_grad()
+
+            current_image = self.generate_from_sample_w(
+                source_w + delta_latent + self.mouth_editing_direction
+            )
+            current_heatmap = self.lip_detector.detect_lips(
+                self.lip_detector.preprocess_image_from_tensor(current_image)
+            )
+
+            landmark_loss = mse_loss(original_heatmap, current_heatmap)
+            smile_loss = torch.linalg.vector_norm(delta_latent)
+            total_loss = (
+                loss_parameters["lambda_landmark_loss"] * landmark_loss
+                + loss_parameters["lambda_smile_loss"] * smile_loss
+            )
+            print(landmark_loss)
+            total_loss.backward()
+            optimizer.step()
+
+            if i == self.num_iterations - 1:
+                utils.save_image(
+                    current_image,
+                    f"sample/optimized_smile_image.png",
+                    nrow=1,
+                    normalize=True,
+                    range=(-1, 1),
+                )
+
+        return
+
+    def optimize_retarget(self, source_latent: Tensor, target_latent: Tensor) -> Tensor:
         # Tensor (just a vector) that is added to the source latent to produce the retargeted image
         delta_latent = torch.zeros_like(source_latent)
         delta_latent.requires_grad = True
@@ -75,8 +142,6 @@ class LipOptimizer:
         target_heatmap = self.lip_detector.detect_lips(
             self.lip_detector.preprocess_image_from_tensor(target_image)
         ).detach()
-
-        print(target_image.shape)
 
         utils.save_image(
             target_image,

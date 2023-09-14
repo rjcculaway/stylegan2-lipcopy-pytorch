@@ -59,9 +59,10 @@ class LipDetector:
         heatmaps = self.model(preprocessed_img)
         # marks, heatmap_grid = self.model.parse_heatmaps(heatmaps[0], (256, 256))
 
-        return heatmaps[
-            :, [self.LEFT_LIP_CORNER, 51, 57, 62, 66, self.RIGHT_LIP_CORNER]
-        ]
+        # return heatmaps[
+        #     :, [self.LEFT_LIP_CORNER, 51, 57, 62, 66, self.RIGHT_LIP_CORNER]
+        # ]
+        return heatmaps[:, [51, 57, 62, 66]]
 
     def save_image_with_marks(self, img, mark_group, heatmap_grid, name_index=""):
         np_img = (img + 1) / 2 * 255  # -> Map image back to 0-255
