@@ -1,4 +1,4 @@
-# StyleGAN 2 in PyTorch
+# StyleGAN 2 LipCopy in PyTorch
 
 
 
