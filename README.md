@@ -22,9 +22,10 @@ You should change your size (--size 256 for example) if you train with another d
 
 
 ## Samples
-![Generated Image](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/9b3a5dc8-d62f-481a-925a-9e45b7166b04)
-![Generated Image + Editing](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/eac6eebc-8408-47ef-b4c1-4961f98e4720)
-![Optimized Expression](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/2dbf26b2-7b2d-4341-a8f5-f5cdfd24c437)
+
+![Generated Image](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/e68a2267-fdf1-4f73-ac02-40f4938a481e)
+![Edited Image](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/326ed721-96ae-4577-b6bb-56e1a41de508)
+![Optimized Image](https://github.com/rjcculaway/stylegan2-lipcopy-pytorch/assets/55573146/ccea7493-f60e-448d-b0d0-1c78c8a90d1c)
 
 ## License
 
